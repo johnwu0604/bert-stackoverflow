@@ -474,6 +474,25 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
         # loss = tf.reduce_mean(per_example_loss)
 
         return (loss, per_example_loss, logits, probabilities)
+        
+
+def serving_input_fn_builder(label_list):
+    """Returns `serving_input_fn` closure for TPUEstimator."""
+
+    def serving_input_fn():
+        label_ids = tf.placeholder(tf.int32, [None, len(label_list)], name='label_ids')
+        input_ids = tf.placeholder(tf.int32, [None, FLAGS.max_seq_length], name='input_ids')
+        input_mask = tf.placeholder(tf.int32, [None, FLAGS.max_seq_length], name='input_mask')
+        segment_ids = tf.placeholder(tf.int32, [None, FLAGS.max_seq_length], name='segment_ids')
+        input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
+            'label_ids': label_ids,
+            'input_ids': input_ids,
+            'input_mask': input_mask,
+            'segment_ids': segment_ids,
+        })()
+        return input_fn
+
+    return serving_input_fn
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
