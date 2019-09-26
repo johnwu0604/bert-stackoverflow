@@ -748,7 +748,7 @@ def main(_):
                 output_line = ",".join(
                     str(class_probability)
                     for class_probability in probabilities) + "\n"
-                writer.write(predict_examples[i].guid,',',output_line)
+                writer.write('{},{}'.format(predict_examples[i].guid, output_line))
                 num_written_lines += 1
         assert num_written_lines == num_actual_predict_examples
 
