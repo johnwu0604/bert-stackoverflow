@@ -6,20 +6,22 @@ import pandas as pd
 from bert import tokenization
 import run_stackoverflow_classifier
 import os
+from azureml.core.model import Model
 
-# TODO: Point these to remote locations
 max_seq_length = 128
-export_dir = '../scoring/export' # should use registered model
 predict_file = 'predict.tf_records'
-vocab_file = '../scoring/vocab.txt' # should use blob storage location
+vocab_file = 'vocab.txt' # should use blob storage location
 labels = ['c#', '.net', 'java', 'asp.net', 'c++', 'javascript', 'php', 'python', 'sql', 'sql-server'] # should use blob storage location
+
+export_dir = Model.get_model_path('bert-stackoverflow')
+model_dir = os.path.join(export_dir, os.listdir(export_dir)[0])
 
 def init():
     global sess, tensor_input_ids, tensor_input_mask, tensor_label_ids, tensor_segment_ids, tensor_outputs, tokenizer
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_file, do_lower_case=True)
     tf.reset_default_graph()
     sess = tf.Session()
-    tf.saved_model.loader.load(sess, [tag_constants.SERVING], export_dir)
+    tf.saved_model.loader.load(sess, [tag_constants.SERVING], model_dir)
     tensor_input_ids = tf.get_default_graph().get_tensor_by_name('input_ids_1:0')
     tensor_input_mask = tf.get_default_graph().get_tensor_by_name('input_mask_1:0')
     tensor_label_ids = tf.get_default_graph().get_tensor_by_name('label_ids_1:0')
@@ -60,5 +62,6 @@ def run(raw_data):
         for i, tag in enumerate(labels):
             output['probabilities'][tag] = result[0][i]
         outputs.append(output)
+        print(outputs)
         return outputs
     
