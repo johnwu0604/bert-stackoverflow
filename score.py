@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import json
 from tensorflow.python.saved_model import tag_constants
 import pandas as pd
 from bert import tokenization
@@ -25,16 +26,20 @@ def init():
     tensor_segment_ids = tf.get_default_graph().get_tensor_by_name('segment_ids_1:0')
     tensor_outputs = tf.get_default_graph().get_tensor_by_name('loss/Sigmoid:0')
 
-def run(data):
+def run(raw_data):
 
-    # TODO: Clean this up
+    data = json.loads(raw_data)['data']
     predict_examples = []
-    label = [0] * len(labels)
-    predict_examples.append(run_stackoverflow_classifier.InputExample(guid=12345, text_a=data, label=label))
+    for item in data:
+        label = [0] * len(labels) 
+        guid = item['id']
+        text = item['text']
+        predict_examples.append(run_stackoverflow_classifier.InputExample(guid=guid, text_a=text, label=label))
 
     run_stackoverflow_classifier.file_based_convert_examples_to_features(predict_examples, labels, max_seq_length, tokenizer, predict_file)
     record_iterator = tf.python_io.tf_record_iterator(path=predict_file)
-    for string_record in record_iterator:
+    outputs = []
+    for i, string_record in enumerate(record_iterator):
         example = tf.train.Example()
         example.ParseFromString(string_record)
         input_ids = example.features.feature['input_ids'].int64_list.value
@@ -47,11 +52,13 @@ def run(data):
             tensor_label_ids: np.array(label_ids).reshape(-1, len(label_ids)),
             tensor_segment_ids: np.array(segment_ids).reshape(-1, max_seq_length),
         })
-        print('\nProbabilities: ')
+        output = { 
+            'id': data[i]['id'],
+            'text': data[i]['text'],
+            'probabilities': {}
+        }
         for i, tag in enumerate(labels):
-            print('{}: {}'.format(tag, result[0][i]))
-
-
-init()
-run("I Need help with tensorflow")
+            output['probabilities'][tag] = result[0][i]
+        outputs.append(output)
+        return outputs
     
