@@ -10,7 +10,7 @@ from azureml.core.model import Model
 
 max_seq_length = 128
 predict_file = 'predict.tf_records'
-vocab_file = 'vocab.txt' # should use blob storage location
+vocab_file = 'bert-stackoverflow/vocab.txt' # should use blob storage location
 labels = ['c#', '.net', 'java', 'asp.net', 'c++', 'javascript', 'php', 'python', 'sql', 'sql-server'] # should use blob storage location
 
 export_dir = Model.get_model_path('bert-stackoverflow')
@@ -55,13 +55,13 @@ def run(raw_data):
             tensor_segment_ids: np.array(segment_ids).reshape(-1, max_seq_length),
         })
         output = { 
-            'id': data[i]['id'],
-            'text': data[i]['text'],
+            'id': str(data[i]['id']),
+            'text': str(data[i]['text']),
             'probabilities': {}
         }
         for i, tag in enumerate(labels):
-            output['probabilities'][tag] = result[0][i]
+            output['probabilities'][tag] = str(result[0][i])
         outputs.append(output)
         print(outputs)
-        return outputs
+        return json.dumps(outputs, indent=2)
     
